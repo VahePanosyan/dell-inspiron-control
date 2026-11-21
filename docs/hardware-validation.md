@@ -44,6 +44,60 @@ but this machine's enumerated BIOS attributes do not expose it. This does not
 prove that every undocumented firmware path is impossible; no additional working
 control path has been established for this platform.
 
+### Follow-up BIOS/ACPI investigation
+
+All 14 AML tables found in the running system's registry (DSDT and 13 SSDTs)
+passed checksum validation and offline iASL disassembly. None exposed `_FSL`,
+`_FPS`, `_FIF` or `_FST`. The Alienware WMAX control GUID was also absent from
+the decoded WMI descriptor blocks.
+
+Offline decoding of the embedded binary MOF identified `OpaqueAccess` and
+`DTTOemFn` in `root\dcim\sysman\ecinterface`. `OpaqueAccess.FixedCmd` reaches
+`FCEX`, which is a literal `Return (Zero)` on this firmware. `VarCmd` forwards an
+opaque packet through an EC mailbox; a verified fan-speed packet and its inverse
+were not identified. `DTTOemFn` accesses the six OEM variables consumed by Intel
+DPTF's `ODVP`; their presence does not establish a fan RPM setter. No arbitrary
+mailbox packets or OEM-variable writes were attempted.
+
+A separate BFn SMBIOS-token route was tested using Dell's
+[published token definitions](https://github.com/dell/libsmbios/blob/master/doc/token_list.csv):
+override enable/disable (`0x02FD`/`0x02FE`) and fan speed (`0x0333` High,
+`0x0334` Medium). The override tokens were **not listed in the SMBIOS token
+directory**, but direct read calls succeeded. The fan-speed tokens were listed.
+This illustrates why the ordinary BIOS attribute inventory alone is insufficient.
+
+The BIOS accepted the override writes and readback changed from 0 to 1. It also
+accepted a genuine Medium-to-High transition, with speed-token readback changing
+from 3 to 1 and back to 3. Actual fan behavior did not follow these metadata changes:
+
+| Bounded test | Peak fan 0 / fan 1 RPM | Outcome |
+|---|---:|---|
+| Override enabled; BIOS AUTO retained | 2530 / 2031 | No forced full speed |
+| Override enabled; High reasserted | 2935 / 2315 | No forced full speed |
+| SMM manual level 2, then override + High | 4037 / 4021 | Remained near the tested manual level |
+| SMM manual level 2, then Medium-to-High transition | 4037 / 4029 | Readback changed; no 6000 RPM operation |
+
+Each final measurement phase lasted approximately 25 seconds. These were existing-load
+functional checks, not a controlled comparison of cooling performance. The last three
+tests compared SMM tachometer readings with Dell DDV; the maximum difference between
+sequential readings was 31 RPM. No sample reached 6000 RPM. The highest reported firmware
+temperature during a final measurement phase was 85 C; no synthetic load was added.
+
+An independent, token-aware recovery process was ready before each override request.
+Every test ended with override disabled and verified as 0, the original speed-token
+value 3 restored, LegacyDiags AUTO accepted, and the initial Performance policy restored.
+All four recovery processes exited normally. No experimental token setter was added to
+the GUI or released executable.
+
+The official [Dell BIOS 1.30.0 package](https://www.dell.com/support/home/en-us/drivers/driversdetails?driverid=GF1CV)
+was additionally inspected **offline**, selecting its SKU 0C28 image to match the test
+machine. Its SHA-256 matched Dell's published
+`e0eaf40cc420f1ddb677f672fa006763910368e1531d8b42704ac7bb4d56b24c`.
+Static inspection of `DellDiagsLegacy` showed that manual/AUTO pairs `0x30A3`/`0x31A3`
+and `0x34A3`/`0x35A3` share the same underlying handlers. Fan requests are forwarded
+through `DellDiagsSmm` to `DellEcSmm`; an additional validated full-speed command was
+not established. No updater, UEFI firmware module or EC image was executed or flashed.
+
 ## Built executable checks
 
 The **packaged Windows executable**, not just Python source, passed:

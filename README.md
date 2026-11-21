@@ -43,6 +43,10 @@ level-3 setter on both fans with `0xFFFF`**. Nominal capability data alone does 
 fan setting. Bounded live tests restored AUTO after each rejection and restored the original thermal
 policy. No sustained 6000 RPM operation has been verified. See [hardware validation](docs/hardware-validation.md).
 
+A separate BIOS-token experiment also accepted and read back `FanControlOverride` and
+a Medium-to-High transition, but both tachometer interfaces still measured about 4000 RPM
+in manual control. These experimental setters are not included in the application.
+
 Ultra therefore uses the stock Performance policy with BIOS automatic cooling. This also avoids
 limiting BIOS cooling to the lower 4000 RPM manual level. No unsupported level is exposed in the UI.
 
