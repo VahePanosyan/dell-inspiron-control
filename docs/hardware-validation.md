@@ -14,16 +14,35 @@ Nominal read command `0x04A3` returned the following for both fans:
 |---|---:|---|
 | 1 | 2400 | Previously validated on both fans |
 | 2 | 4000 | Validated on both fans |
-| 3 | 6200 | First fan setter rejected with EAX `0x0000FFFF`; test stopped |
+| 3 | 6200 | Setter independently rejected on both fans with EAX `0x0000FFFF` |
 
-The bounded test first used state 2, then attempted state 3. An independent recovery
-process was running. The BIOS rejected `0x01A3` with EBX `0x0300`. No state-3 command
-was sent to the second fan after that failure. The test's finally block successfully
-returned AUTO and restored the original Performance policy.
+The initial bounded test first used state 2, then attempted state 3 on the first fan.
+A follow-up test checked each fan independently, with an independent recovery
+process ready before entering manual mode. The BIOS rejected `0x01A3` with both
+EBX `0x0300` (fan 0) and `0x0301` (fan 1). AUTO was restored after each attempt;
+the final readback confirmed that the original Performance policy was restored.
 
 Reading a 6200 RPM nominal value was therefore insufficient to enable manual turbo.
 This release exposes states 1/2 only. Ultra Performance uses automatic BIOS cooling.
 Earlier automatic readings on this machine reached approximately 5200/4300 RPM.
+Neither a sustained 6000 RPM reading nor a working 6000 RPM setter has been verified.
+
+### Other cooling interfaces checked
+
+Read-only BIOS attribute enumeration found `ThermalManagement` with Optimized,
+Cool, Quiet and UltraPerformance choices. No fan-speed or fan-override attribute
+was exposed. The available `ThermalLogClear` attribute only concerns event logs;
+it was not changed. No fan-control class was found in `root\dcim\sysman`, and no
+AWCC/WMAX class was found in `root\wmi`.
+
+`Win32_Fan` exposes two generic cooling-device instances with no `DesiredSpeed`
+or `VariableSpeed` value. Microsoft documents its
+[`SetSpeed` method as not implemented](https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-fan).
+Dell documents a separate
+[`FanCtrlOvrd` full-speed setting](https://www.dell.com/support/manuals/en-ca/command-powershell-provider-v2.3/dellcommandpowershellprovider_rg_2.3/powermanagement?guid=guid-18b6dc2e-6af2-4537-9cc2-4abc5bf94e6c&lang=en-us),
+but this machine's enumerated BIOS attributes do not expose it. This does not
+prove that every undocumented firmware path is impossible; no additional working
+control path has been established for this platform.
 
 ## Built executable checks
 

@@ -38,9 +38,10 @@ test laptop, but this does not guarantee 70 W in every game. This app does not u
 
 ## Why manual turbo / 6200 RPM is not offered
 
-The test BIOS reports 6200 RPM as the nominal speed of SMM level 3, but **rejects the level-3 setter
-with `0xFFFF`**. Nominal capability data alone does not prove a working fan setting. The bounded live
-test restored AUTO and the original thermal policy after the rejection. See [hardware validation](docs/hardware-validation.md).
+The test BIOS reports 6200 RPM as the nominal speed of SMM level 3, but **independently rejects the
+level-3 setter on both fans with `0xFFFF`**. Nominal capability data alone does not prove a working
+fan setting. Bounded live tests restored AUTO after each rejection and restored the original thermal
+policy. No sustained 6000 RPM operation has been verified. See [hardware validation](docs/hardware-validation.md).
 
 Ultra therefore uses the stock Performance policy with BIOS automatic cooling. This also avoids
 limiting BIOS cooling to the lower 4000 RPM manual level. No unsupported level is exposed in the UI.
