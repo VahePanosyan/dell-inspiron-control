@@ -1,0 +1,3 @@
+PySide6==6.12.0
+pywin32==312
+nvidia-ml-py==13.615.71

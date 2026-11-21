@@ -1,0 +1,14 @@
+__pycache__/
+.pytest_cache/
+.venv/
+.coverage
+htmlcov/
+build/
+dist/
+artifacts/
+*.log
+*.jsonl
+*.aml
+*.dsl
+*.bin
+.env*
